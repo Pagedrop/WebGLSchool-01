@@ -61,7 +61,7 @@ class App3 {
   static get AMBIENT_LIGHT_PARAM() {
     return {
       color: 0xffffff,
-      intensity: 1,
+      intensity: 0.2,
     };
   }
 
@@ -133,7 +133,10 @@ class App3 {
 
     this.world;
 
-    this.isDown = false;
+    this.AisDown = false;
+    this.WisDown = false;
+    this.SisDown = false;
+    this.DisDown = false;
 
     // 再帰呼び出しの為のthis固定
     this.render = this.render.bind(this);
@@ -147,8 +150,17 @@ class App3 {
       "keydown",
       (keyEvent) => {
         switch (keyEvent.key) {
-          case " ":
-            this.isDown = true;
+          case "a":
+            this.AisDown = true;
+            break;
+          case "w":
+            this.WisDown = true;
+            break;
+          case "s":
+            this.SisDown = true;
+            break;
+          case "d":
+            this.DisDown = true;
             break;
           default:
         }
@@ -159,8 +171,17 @@ class App3 {
       "keyup",
       (keyEvent) => {
         switch (keyEvent.key) {
-          case " ":
-            this.isDown = false;
+          case "a":
+            this.AisDown = false;
+            break;
+          case "w":
+            this.WisDown = false;
+            break;
+          case "s":
+            this.SisDown = false;
+            break;
+          case "d":
+            this.DisDown = false;
             break;
           default:
         }
@@ -332,6 +353,8 @@ class App3 {
       directionalLightHelperSize
     );
     this.scene.add(this.directionalLightHelper);
+
+    console.log(this.ground.quaternion);
   }
 
   /**
@@ -342,9 +365,22 @@ class App3 {
     let ang = 0;
     requestAnimationFrame(this.render);
 
-    if (this.isDown === true) {
+    if (this.AisDown === true) {
+      this.ground.rotation.y -= 0.01;
+    } else if (this.WisDown === true) {
+      this.ground.rotation.x -= 0.01;
+    } else if (this.SisDown === true) {
+      this.ground.rotation.x += 0.01;
+    } else if (this.DisDown === true) {
       this.ground.rotation.y += 0.01;
     }
+
+    this.groundBody.quaternion.set(
+      this.ground.quaternion.x,
+      this.ground.quaternion.y,
+      this.ground.quaternion.z,
+      this.ground.quaternion.w
+    );
 
     if (this.lastTime !== undefined) {
       var dt = (time - this.lastTime) / 1000;
