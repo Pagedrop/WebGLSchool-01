@@ -75,6 +75,29 @@ class App3 {
   }
 
   /**
+   * groundに関する定義
+   */
+  static get GROUND_PARAM() {
+    return {
+      size: 30,
+      mass: 0,
+      color: "0xffffff",
+    };
+  }
+
+  /**
+   * boxに関する定義
+   */
+  static get BOX_PARAM() {
+    return {
+      count: 200,
+      size: 0.5,
+      mass: 5,
+      range: 3,
+    };
+  }
+
+  /**
    * コンストラクタ
    * @constructor
    */
@@ -88,11 +111,14 @@ class App3 {
     this.boxGeometry;
     this.boxMaterial;
     this.box;
+    this.boxArray;
+
     this.groundGeometry;
     this.groundMaterial;
     this.ground;
 
     this.boxBody;
+    this.boxBodyArray;
     this.groundBody;
     this.fixedTimeStep = 1.0 / 60.0;
     this.maxSubSteps = 3;
@@ -208,25 +234,25 @@ class App3 {
     );
     this.scene.add(this.ambientLight);
 
-    // ジオメトリ
-    this.boxGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0);
-
     /**
-     * 平面生成
+     * ground生成
      */
-    // 平面body
+    // gourndBody
     this.groundBody = new CANNON.Body({
-      mass: 0,
+      mass: App3.GROUND_PARAM.mass,
     });
     this.groundBody.addShape(new CANNON.Plane());
     this.groundBody.quaternion.setFromAxisAngle(
       new CANNON.Vec3(1, 0, 0),
       -Math.PI / 2
     );
-    // 平面mesh
-    this.groundGeometry = new THREE.PlaneGeometry(20, 20);
+    // groundMesh
+    this.groundGeometry = new THREE.PlaneGeometry(
+      App3.GROUND_PARAM.size,
+      App3.GROUND_PARAM.size
+    );
     this.groundMaterial = new THREE.MeshBasicMaterial({
-      color: "#ffffff",
+      color: App3.GROUND_PARAM.color,
       side: THREE.DoubleSide,
     });
     this.ground = new THREE.Mesh(this.groundGeometry, this.groundMaterial);
@@ -236,34 +262,61 @@ class App3 {
     this.scene.add(this.ground);
     this.world.addBody(this.groundBody);
 
-    /**
-     * 箱生成
-     */
-    // 箱body
-    this.boxBody = new CANNON.Body({
-      mass: 5,
-      position: new CANNON.Vec3(0, 10, 0),
-      shape: new CANNON.Box(new CANNON.Vec3(1 / 2, 1 / 2, 1 / 2)),
-    });
-    // 回転追加
-    this.boxBody.angularVelocity.set(Math.random(), Math.random(), 0);
-    // 箱mesh
-    this.boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-    this.boxMaterial = new THREE.MeshBasicMaterial({
+    // box マテリアル
+    this.boxMaterial = new THREE.MeshPhongMaterial({
       color: 0xaa0000,
     });
-    this.box = new THREE.Mesh(this.boxGeometry, this.boxMaterial);
-    this.box.position.set(0, 10, 0);
-    this.scene.add(this.box);
-    this.world.addBody(this.boxBody);
+
+    /**
+     * boxを複数生成
+     */
+    this.boxArray = [];
+    this.boxBodyArray = [];
+
+    for (let i = 0; i < App3.BOX_PARAM.count; i++) {
+      //座標をランダムに散らす（Yは固定）
+      let positionX = (Math.random() * 2.0 - 1.0) * App3.BOX_PARAM.range;
+      let positionY = (Math.random() * 2.0 + 1.0) * 3 + i + 10;
+      let positionZ = (Math.random() * 2.0 - 1.0) * App3.BOX_PARAM.range;
+
+      // boxBody
+      const boxBody = new CANNON.Body({
+        mass: App3.BOX_PARAM.mass,
+        position: new CANNON.Vec3(positionX, positionY, positionZ),
+        shape: new CANNON.Box(
+          new CANNON.Vec3(
+            App3.BOX_PARAM.size / 2,
+            App3.BOX_PARAM.size / 2,
+            App3.BOX_PARAM.size / 2
+          )
+        ),
+      });
+      // 回転追加
+      boxBody.angularVelocity.set(Math.random(), Math.random(), 0);
+
+      // boxMesh
+      this.boxGeometry = new THREE.BoxGeometry(
+        App3.BOX_PARAM.size,
+        App3.BOX_PARAM.size,
+        App3.BOX_PARAM.size
+      );
+      const box = new THREE.Mesh(this.boxGeometry, this.boxMaterial);
+      box.position.set(positionX, positionY, positionZ);
+
+      this.world.addBody(boxBody);
+      this.scene.add(box);
+
+      this.boxArray.push(box);
+      this.boxBodyArray.push(boxBody);
+    }
 
     // OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
     // ヘルパー
     // gridHelper
-    const gridHelperSize = 20;
-    const gridHelperDivisions = 20;
+    const gridHelperSize = App3.GROUND_PARAM.size;
+    const gridHelperDivisions = App3.GROUND_PARAM.size;
     this.gridHelper = new THREE.GridHelper(gridHelperSize, gridHelperDivisions);
     this.scene.add(this.gridHelper);
 
@@ -285,21 +338,26 @@ class App3 {
    * 描画処理
    */
   render(time) {
+    const deg = 20;
+    let ang = 0;
     requestAnimationFrame(this.render);
 
     if (this.isDown === true) {
-      this.box.rotation.y += 0.02;
+      this.ground.rotation.y += 0.01;
     }
 
     if (this.lastTime !== undefined) {
       var dt = (time - this.lastTime) / 1000;
       this.world.step(this.fixedTimeStep, dt, this.maxSubSteps);
     }
-    // console.log("Sphere z position: " + this.sphere.position.z);
+
     this.lastTime = time;
     this.controls.update();
-    this.box.position.copy(this.boxBody.position);
-    this.box.quaternion.copy(this.boxBody.quaternion);
+
+    for (let i = 0; i < App3.BOX_PARAM.count; i++) {
+      this.boxArray[i].position.copy(this.boxBodyArray[i].position);
+      this.boxArray[i].quaternion.copy(this.boxBodyArray[i].quaternion);
+    }
 
     this.renderer.render(this.scene, this.camera);
   }
