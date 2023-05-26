@@ -25,9 +25,9 @@ class App3 {
       near: 0.1,
       far: 100000,
       x: 0.0,
-      y: 5.0,
+      y: 12.0,
       z: 20.0,
-      lookAt: new THREE.Vector3(0.0, 0.0, 0.0),
+      lookAt: new THREE.Vector3(1.0, 0.0, 0.0),
     };
   }
 
@@ -36,7 +36,7 @@ class App3 {
    */
   static get RENDERER_PARAM() {
     return {
-      clearColor: 0x333333,
+      clearColor: 0xccdcda,
       width: window.innerWidth,
       height: window.innerHeight,
     };
@@ -48,7 +48,7 @@ class App3 {
   static get DIRECTIONAL_LIGHT_PARAM() {
     return {
       color: 0xffffff,
-      intensity: 1.0,
+      intensity: 0.5,
       x: 2.0,
       y: 2.0,
       z: 2.0,
@@ -66,22 +66,13 @@ class App3 {
   }
 
   /**
-   * マテリアル定義の定数
-   */
-  static get MATERIAL_PARAM() {
-    return {
-      color: 0x3399ff,
-    };
-  }
-
-  /**
    * groundに関する定義
    */
   static get GROUND_PARAM() {
     return {
       size: 30,
       mass: 0,
-      color: "0xffffff",
+      color: 0xacb3fb,
     };
   }
 
@@ -90,7 +81,7 @@ class App3 {
    */
   static get BOX_PARAM() {
     return {
-      count: 200,
+      count: 400,
       size: 0.5,
       mass: 5,
       range: 3,
@@ -105,7 +96,10 @@ class App3 {
     this.renderer;
     this.scene;
     this.camera;
-    this.directionalLight;
+    this.directionalLight1;
+    this.directionalLight2;
+    this.hemisphereLight;
+    this.spotLight;
     this.ambientLight;
     this.material;
     this.boxGeometry;
@@ -133,6 +127,7 @@ class App3 {
 
     this.world;
 
+    this.isDown = false;
     this.AisDown = false;
     this.WisDown = false;
     this.SisDown = false;
@@ -150,6 +145,9 @@ class App3 {
       "keydown",
       (keyEvent) => {
         switch (keyEvent.key) {
+          case " ":
+            this.isDown = true;
+            break;
           case "a":
             this.AisDown = true;
             break;
@@ -171,6 +169,8 @@ class App3 {
       "keyup",
       (keyEvent) => {
         switch (keyEvent.key) {
+          case " ":
+            break;
           case "a":
             this.AisDown = false;
             break;
@@ -193,6 +193,7 @@ class App3 {
     window.addEventListener(
       "resize",
       () => {
+        this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
@@ -210,12 +211,15 @@ class App3 {
     this.world.gravity.set(0, -9.82, 0);
 
     //レンダラー
-    this.renderer = new THREE.WebGLRenderer();
+    this.renderer = new THREE.WebGLRenderer({ alpha: true });
+    this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setClearColor(App3.RENDERER_PARAM.clearColor);
     this.renderer.setSize(
       App3.RENDERER_PARAM.width,
       App3.RENDERER_PARAM.height
     );
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const wrapper = document.querySelector("#webgl");
     wrapper.appendChild(this.renderer.domElement);
 
@@ -237,16 +241,19 @@ class App3 {
     this.camera.lookAt(App3.CAMERA_PARAM.lookAt);
 
     // ディレクショナルライト
-    this.directionalLight = new THREE.DirectionalLight(
+    this.directionalLight1 = new THREE.DirectionalLight(
       App3.DIRECTIONAL_LIGHT_PARAM.color,
       App3.DIRECTIONAL_LIGHT_PARAM.intensity
     );
-    this.directionalLight.position.set(
-      App3.DIRECTIONAL_LIGHT_PARAM.x,
-      App3.DIRECTIONAL_LIGHT_PARAM.y,
-      App3.DIRECTIONAL_LIGHT_PARAM.z
+    this.directionalLight1.position.set(9.5, 8.2, 8.3);
+    this.scene.add(this.directionalLight1);
+
+    this.directionalLight2 = new THREE.DirectionalLight(
+      App3.DIRECTIONAL_LIGHT_PARAM.color,
+      App3.DIRECTIONAL_LIGHT_PARAM.intensity
     );
-    this.scene.add(this.directionalLight);
+    this.directionalLight2.position.set(-15.0, 5.2, 8.0);
+    this.scene.add(this.directionalLight2);
 
     // アンビエントライト
     this.ambientLight = new THREE.AmbientLight(
@@ -254,6 +261,24 @@ class App3 {
       App3.AMBIENT_LIGHT_PARAM.intensity
     );
     this.scene.add(this.ambientLight);
+
+    // ヘミスフィアライト
+    this.hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xd0e040, 0.2);
+    this.scene.add(this.hemisphereLight);
+
+    this.spotLight = new THREE.SpotLight(
+      0xffffff,
+      0.5,
+      1000,
+      Math.PI * 0.3,
+      1,
+      80
+    );
+    this.spotLight.position.set(5.0, 20.0, 3.0);
+    this.spotLight.castShadow = true;
+    this.scene.add(this.spotLight);
+    const spotLightHelper = new THREE.SpotLightHelper(this.spotLight);
+    this.scene.add(spotLightHelper);
 
     /**
      * ground生成
@@ -268,16 +293,20 @@ class App3 {
       -Math.PI / 2
     );
     // groundMesh
-    this.groundGeometry = new THREE.PlaneGeometry(
+    this.groundGeometry = new THREE.BoxGeometry(
       App3.GROUND_PARAM.size,
-      App3.GROUND_PARAM.size
+      App3.GROUND_PARAM.size,
+      0.05
     );
-    this.groundMaterial = new THREE.MeshBasicMaterial({
+    this.groundMaterial = new THREE.MeshStandardMaterial({
       color: App3.GROUND_PARAM.color,
       side: THREE.DoubleSide,
     });
     this.ground = new THREE.Mesh(this.groundGeometry, this.groundMaterial);
     this.ground.rotation.x = -Math.PI / 2;
+    this.ground.position.y = 0;
+    this.ground.castShadow = true;
+    this.ground.receiveShadow = true;
     this.ground.position.y = 0;
 
     this.scene.add(this.ground);
@@ -285,7 +314,7 @@ class App3 {
 
     // box マテリアル
     this.boxMaterial = new THREE.MeshPhongMaterial({
-      color: 0xaa0000,
+      color: 0xffffff,
     });
 
     /**
@@ -297,7 +326,7 @@ class App3 {
     for (let i = 0; i < App3.BOX_PARAM.count; i++) {
       //座標をランダムに散らす（Yは固定）
       let positionX = (Math.random() * 2.0 - 1.0) * App3.BOX_PARAM.range;
-      let positionY = (Math.random() * 2.0 + 1.0) * 3 + i + 10;
+      let positionY = Math.random() * 2.0 + 1.0 + i + 0.2;
       let positionZ = (Math.random() * 2.0 - 1.0) * App3.BOX_PARAM.range;
 
       // boxBody
@@ -322,24 +351,68 @@ class App3 {
         App3.BOX_PARAM.size
       );
       const box = new THREE.Mesh(this.boxGeometry, this.boxMaterial);
+      box.castShadow = true;
+      box.receiveShadow = true;
       box.position.set(positionX, positionY, positionZ);
 
-      this.world.addBody(boxBody);
+      // this.world.addBody(boxBody);
       this.scene.add(box);
 
       this.boxArray.push(box);
       this.boxBodyArray.push(boxBody);
     }
 
+    // const baseX = -2;
+    // const baseZ = -2;
+    // const baseY = 10;
+    // for (let k = 0; k < 5; k++) {
+    //   let positionZ = 1 * k + baseZ;
+    //   for (let i = 0; i < 5; i++) {
+    //     let positionY = 1 * i + baseY;
+    //     for (let j = 0; j < 5; j++) {
+    //       let positionX = 1 * j + baseX;
+
+    //       // boxBody
+    //       const boxBody = new CANNON.Body({
+    //         mass: App3.BOX_PARAM.mass,
+    //         position: new CANNON.Vec3(positionX, positionY, positionZ),
+    //         shape: new CANNON.Box(
+    //           new CANNON.Vec3(
+    //             App3.BOX_PARAM.size / 2,
+    //             App3.BOX_PARAM.size / 2,
+    //             App3.BOX_PARAM.size / 2
+    //           )
+    //         ),
+    //       });
+
+    //       // boxMesh
+    //       this.boxGeometry = new THREE.BoxGeometry(
+    //         App3.BOX_PARAM.size,
+    //         App3.BOX_PARAM.size,
+    //         App3.BOX_PARAM.size
+    //       );
+    //       const box = new THREE.Mesh(this.boxGeometry, this.boxMaterial);
+    //       box.castShadow = true;
+    //       box.receiveShadow = true;
+    //       box.position.set(positionX, positionY, positionZ);
+
+    //       this.scene.add(box);
+
+    //       this.boxArray.push(box);
+    //       this.boxBodyArray.push(boxBody);
+    //     }
+    //   }
+    // }
+
     // OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
     // ヘルパー
     // gridHelper
-    const gridHelperSize = App3.GROUND_PARAM.size;
-    const gridHelperDivisions = App3.GROUND_PARAM.size;
-    this.gridHelper = new THREE.GridHelper(gridHelperSize, gridHelperDivisions);
-    this.scene.add(this.gridHelper);
+    // const gridHelperSize = App3.GROUND_PARAM.size;
+    // const gridHelperDivisions = App3.GROUND_PARAM.size;
+    // this.gridHelper = new THREE.GridHelper(gridHelperSize, gridHelperDivisions);
+    // this.scene.add(this.gridHelper);
 
     // axesHelper
     const axesBarLength = 5.0;
@@ -347,23 +420,27 @@ class App3 {
     this.scene.add(this.axesHelper);
 
     // DirectionalLightHelper
-    const directionalLightHelperSize = 1;
-    this.directionalLightHelper = new THREE.DirectionalLightHelper(
-      this.directionalLight,
-      directionalLightHelperSize
-    );
-    this.scene.add(this.directionalLightHelper);
-
-    console.log(this.ground.quaternion);
+    // const directionalLightHelperSize = 1;
+    // this.directionalLightHelper = new THREE.DirectionalLightHelper(
+    //   this.directionalLight,
+    //   directionalLightHelperSize
+    // );
+    // this.scene.add(this.directionalLightHelper);
   }
 
   /**
    * 描画処理
    */
   render(time) {
-    const deg = 20;
-    let ang = 0;
     requestAnimationFrame(this.render);
+
+    if (this.isDown === true) {
+      for (let i = 0; i < App3.BOX_PARAM.count; i++) {
+        this.world.addBody(this.boxBodyArray[i]);
+        this.boxArray[i].position.copy(this.boxBodyArray[i].position);
+        this.boxArray[i].quaternion.copy(this.boxBodyArray[i].quaternion);
+      }
+    }
 
     if (this.AisDown === true) {
       this.ground.rotation.y -= 0.01;
@@ -389,11 +466,6 @@ class App3 {
 
     this.lastTime = time;
     this.controls.update();
-
-    for (let i = 0; i < App3.BOX_PARAM.count; i++) {
-      this.boxArray[i].position.copy(this.boxBodyArray[i].position);
-      this.boxArray[i].quaternion.copy(this.boxBodyArray[i].quaternion);
-    }
 
     this.renderer.render(this.scene, this.camera);
   }
