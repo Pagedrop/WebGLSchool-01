@@ -6,3 +6,21 @@ html,
 body {
   overflow: hidden;
 }
+#webgl {
+  position: relative;
+}
+.wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+.ctl {
+  padding: 8px;
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+.ctl + .ctl {
+  margin-top: 10px;
+}
