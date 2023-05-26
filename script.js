@@ -88,13 +88,12 @@ class App3 {
     this.boxGeometry;
     this.boxMaterial;
     this.box;
-    this.planeGeometry;
-    this.planeMaterial;
-    this.plane;
-
-    this.sphere;
-    this.boxBody;
+    this.groundGeometry;
+    this.groundMaterial;
     this.ground;
+
+    this.boxBody;
+    this.groundBody;
     this.fixedTimeStep = 1.0 / 60.0;
     this.maxSubSteps = 3;
     this.lastTime;
@@ -216,26 +215,26 @@ class App3 {
      * 平面生成
      */
     // 平面body
-    this.ground = new CANNON.Body({
+    this.groundBody = new CANNON.Body({
       mass: 0,
     });
-    this.ground.addShape(new CANNON.Plane());
-    this.ground.quaternion.setFromAxisAngle(
+    this.groundBody.addShape(new CANNON.Plane());
+    this.groundBody.quaternion.setFromAxisAngle(
       new CANNON.Vec3(1, 0, 0),
       -Math.PI / 2
     );
     // 平面mesh
-    this.planeGeometry = new THREE.PlaneGeometry(20, 20);
-    this.planeMaterial = new THREE.MeshBasicMaterial({
-      color: "#23372f",
+    this.groundGeometry = new THREE.PlaneGeometry(20, 20);
+    this.groundMaterial = new THREE.MeshBasicMaterial({
+      color: "#ffffff",
       side: THREE.DoubleSide,
     });
-    this.plane = new THREE.Mesh(this.planeGeometry, this.planeMaterial);
-    this.plane.rotation.x = -Math.PI / 2;
-    this.plane.position.y = 0;
+    this.ground = new THREE.Mesh(this.groundGeometry, this.groundMaterial);
+    this.ground.rotation.x = -Math.PI / 2;
+    this.ground.position.y = 0;
 
-    this.scene.add(this.plane);
-    this.world.addBody(this.ground);
+    this.scene.add(this.ground);
+    this.world.addBody(this.groundBody);
 
     /**
      * 箱生成
