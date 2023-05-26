@@ -406,6 +406,7 @@ class App3 {
 
     // OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
 
     // ヘルパー
     // gridHelper
