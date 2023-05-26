@@ -1,5 +1,6 @@
 import * as THREE from "./lib/three.module.js";
 import { OrbitControls } from "../lib/OrbitControls.js";
+import * as CANNON from "./lib/cannon-es.js";
 
 window.addEventListener(
   "DOMContentLoaded",
@@ -22,10 +23,10 @@ class App3 {
       fovy: 60,
       aspect: window.innerWidth / window.innerHeight,
       near: 0.1,
-      far: 1000,
+      far: 100000,
       x: 0.0,
-      y: 2.0,
-      z: 10.0,
+      y: 5.0,
+      z: 20.0,
       lookAt: new THREE.Vector3(0.0, 0.0, 0.0),
     };
   }
@@ -35,7 +36,7 @@ class App3 {
    */
   static get RENDERER_PARAM() {
     return {
-      clearColor: 0x666666,
+      clearColor: 0x333333,
       width: window.innerWidth,
       height: window.innerHeight,
     };
@@ -60,7 +61,7 @@ class App3 {
   static get AMBIENT_LIGHT_PARAM() {
     return {
       color: 0xffffff,
-      intensity: 0.2,
+      intensity: 1,
     };
   }
 
@@ -85,10 +86,27 @@ class App3 {
     this.ambientLight;
     this.material;
     this.boxGeometry;
+    this.boxMaterial;
     this.box;
+    this.planeGeometry;
+    this.planeMaterial;
+    this.plane;
+
+    this.sphere;
+    this.boxBody;
+    this.ground;
+    this.fixedTimeStep = 1.0 / 60.0;
+    this.maxSubSteps = 3;
+    this.lastTime;
+
     this.controls;
+
+    // ヘルパー
     this.axesHelper;
+    this.gridHelper;
     this.directionalLightHelper;
+
+    this.world;
 
     this.isDown = false;
 
@@ -141,6 +159,10 @@ class App3 {
    * 初期化処理
    */
   init() {
+    // 物理演算ワールド
+    this.world = new CANNON.World();
+    this.world.gravity.set(0, -9.82, 0);
+
     //レンダラー
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setClearColor(App3.RENDERER_PARAM.clearColor);
@@ -190,17 +212,62 @@ class App3 {
     // ジオメトリ
     this.boxGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 
-    // マテリアル
-    this.material = new THREE.MeshPhongMaterial(App3.MATERIAL_PARAM);
+    /**
+     * 平面生成
+     */
+    // 平面body
+    this.ground = new CANNON.Body({
+      mass: 0,
+    });
+    this.ground.addShape(new CANNON.Plane());
+    this.ground.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 0, 0),
+      -Math.PI / 2
+    );
+    // 平面mesh
+    this.planeGeometry = new THREE.PlaneGeometry(20, 20);
+    this.planeMaterial = new THREE.MeshBasicMaterial({
+      color: "#23372f",
+      side: THREE.DoubleSide,
+    });
+    this.plane = new THREE.Mesh(this.planeGeometry, this.planeMaterial);
+    this.plane.rotation.x = -Math.PI / 2;
+    this.plane.position.y = 0;
 
-    // メッシュ
-    this.box = new THREE.Mesh(this.boxGeometry, this.material);
+    this.scene.add(this.plane);
+    this.world.addBody(this.ground);
+
+    /**
+     * 箱生成
+     */
+    // 箱body
+    this.boxBody = new CANNON.Body({
+      mass: 5,
+      position: new CANNON.Vec3(0, 10, 0),
+      shape: new CANNON.Box(new CANNON.Vec3(1 / 2, 1 / 2, 1 / 2)),
+    });
+    // 回転追加
+    this.boxBody.angularVelocity.set(Math.random(), Math.random(), 0);
+    // 箱mesh
+    this.boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+    this.boxMaterial = new THREE.MeshBasicMaterial({
+      color: 0xaa0000,
+    });
+    this.box = new THREE.Mesh(this.boxGeometry, this.boxMaterial);
+    this.box.position.set(0, 10, 0);
     this.scene.add(this.box);
+    this.world.addBody(this.boxBody);
 
     // OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
     // ヘルパー
+    // gridHelper
+    const gridHelperSize = 20;
+    const gridHelperDivisions = 20;
+    this.gridHelper = new THREE.GridHelper(gridHelperSize, gridHelperDivisions);
+    this.scene.add(this.gridHelper);
+
     // axesHelper
     const axesBarLength = 5.0;
     this.axesHelper = new THREE.AxesHelper(axesBarLength);
@@ -218,14 +285,22 @@ class App3 {
   /**
    * 描画処理
    */
-  render() {
+  render(time) {
     requestAnimationFrame(this.render);
 
     if (this.isDown === true) {
       this.box.rotation.y += 0.02;
     }
 
+    if (this.lastTime !== undefined) {
+      var dt = (time - this.lastTime) / 1000;
+      this.world.step(this.fixedTimeStep, dt, this.maxSubSteps);
+    }
+    // console.log("Sphere z position: " + this.sphere.position.z);
+    this.lastTime = time;
     this.controls.update();
+    this.box.position.copy(this.boxBody.position);
+    this.box.quaternion.copy(this.boxBody.quaternion);
 
     this.renderer.render(this.scene, this.camera);
   }
