@@ -1,5 +1,5 @@
 import * as THREE from "./lib/three.module.js";
-import { OrbitControls } from "../lib/OrbitControls.js";
+import { OrbitControls } from "./lib/OrbitControls.js";
 import * as CANNON from "./lib/cannon-es.js";
 
 window.addEventListener(
@@ -361,48 +361,6 @@ class App3 {
       this.boxArray.push(box);
       this.boxBodyArray.push(boxBody);
     }
-
-    // const baseX = -2;
-    // const baseZ = -2;
-    // const baseY = 10;
-    // for (let k = 0; k < 5; k++) {
-    //   let positionZ = 1 * k + baseZ;
-    //   for (let i = 0; i < 5; i++) {
-    //     let positionY = 1 * i + baseY;
-    //     for (let j = 0; j < 5; j++) {
-    //       let positionX = 1 * j + baseX;
-
-    //       // boxBody
-    //       const boxBody = new CANNON.Body({
-    //         mass: App3.BOX_PARAM.mass,
-    //         position: new CANNON.Vec3(positionX, positionY, positionZ),
-    //         shape: new CANNON.Box(
-    //           new CANNON.Vec3(
-    //             App3.BOX_PARAM.size / 2,
-    //             App3.BOX_PARAM.size / 2,
-    //             App3.BOX_PARAM.size / 2
-    //           )
-    //         ),
-    //       });
-
-    //       // boxMesh
-    //       this.boxGeometry = new THREE.BoxGeometry(
-    //         App3.BOX_PARAM.size,
-    //         App3.BOX_PARAM.size,
-    //         App3.BOX_PARAM.size
-    //       );
-    //       const box = new THREE.Mesh(this.boxGeometry, this.boxMaterial);
-    //       box.castShadow = true;
-    //       box.receiveShadow = true;
-    //       box.position.set(positionX, positionY, positionZ);
-
-    //       this.scene.add(box);
-
-    //       this.boxArray.push(box);
-    //       this.boxBodyArray.push(boxBody);
-    //     }
-    //   }
-    // }
 
     // OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
