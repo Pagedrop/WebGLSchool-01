@@ -277,8 +277,8 @@ class App3 {
     this.spotLight.position.set(5.0, 20.0, 3.0);
     this.spotLight.castShadow = true;
     this.scene.add(this.spotLight);
-    const spotLightHelper = new THREE.SpotLightHelper(this.spotLight);
-    this.scene.add(spotLightHelper);
+    // const spotLightHelper = new THREE.SpotLightHelper(this.spotLight);
+    // this.scene.add(spotLightHelper);
 
     /**
      * ground生成
@@ -374,9 +374,9 @@ class App3 {
     // this.scene.add(this.gridHelper);
 
     // axesHelper
-    const axesBarLength = 5.0;
-    this.axesHelper = new THREE.AxesHelper(axesBarLength);
-    this.scene.add(this.axesHelper);
+    // const axesBarLength = 5.0;
+    // this.axesHelper = new THREE.AxesHelper(axesBarLength);
+    // this.scene.add(this.axesHelper);
 
     // DirectionalLightHelper
     // const directionalLightHelperSize = 1;
