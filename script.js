@@ -450,11 +450,14 @@ class App3 {
 
     if (this.AisDown === true) {
       this.ground.rotation.y -= 0.01;
-    } else if (this.WisDown === true) {
+    }
+    if (this.WisDown === true) {
       this.ground.rotation.x -= 0.01;
-    } else if (this.SisDown === true) {
+    }
+    if (this.SisDown === true) {
       this.ground.rotation.x += 0.01;
-    } else if (this.DisDown === true) {
+    }
+    if (this.DisDown === true) {
       this.ground.rotation.y += 0.01;
     }
 
