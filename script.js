@@ -189,6 +189,44 @@ class App3 {
       false
     );
 
+    // SPボタンイベント
+    document.querySelector(".a").addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.AisDown = true;
+    });
+    document.querySelector(".a").addEventListener("touchend", (e) => {
+      e.preventDefault();
+      this.AisDown = false;
+    });
+    document.querySelector(".w").addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.WisDown = true;
+    });
+    document.querySelector(".w").addEventListener("touchend", (e) => {
+      e.preventDefault();
+      this.WisDown = false;
+    });
+    document.querySelector(".s").addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.SisDown = true;
+    });
+    document.querySelector(".s").addEventListener("touchend", (e) => {
+      e.preventDefault();
+      this.SisDown = false;
+    });
+    document.querySelector(".d").addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.DisDown = true;
+    });
+    document.querySelector(".d").addEventListener("touchend", (e) => {
+      e.preventDefault();
+      this.DisDown = false;
+    });
+    document.querySelector(".drop").addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.isDown = true;
+    });
+
     // リサイズイベント
     window.addEventListener(
       "resize",
@@ -277,8 +315,6 @@ class App3 {
     this.spotLight.position.set(5.0, 20.0, 3.0);
     this.spotLight.castShadow = true;
     this.scene.add(this.spotLight);
-    // const spotLightHelper = new THREE.SpotLightHelper(this.spotLight);
-    // this.scene.add(spotLightHelper);
 
     /**
      * ground生成
@@ -286,12 +322,23 @@ class App3 {
     // gourndBody
     this.groundBody = new CANNON.Body({
       mass: App3.GROUND_PARAM.mass,
+      position: new CANNON.Vec3(0, -0.5, 0),
     });
-    this.groundBody.addShape(new CANNON.Plane());
+    // this.groundBody.addShape(new CANNON.Plane());
+    this.groundBody.addShape(
+      new CANNON.Box(
+        new CANNON.Vec3(
+          App3.GROUND_PARAM.size / 2,
+          App3.GROUND_PARAM.size / 2,
+          0.5
+        )
+      )
+    );
     this.groundBody.quaternion.setFromAxisAngle(
       new CANNON.Vec3(1, 0, 0),
       -Math.PI / 2
     );
+
     // groundMesh
     this.groundGeometry = new THREE.BoxGeometry(
       App3.GROUND_PARAM.size,
